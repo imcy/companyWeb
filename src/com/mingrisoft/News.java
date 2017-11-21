@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class News {
 	DBConnection DBConn = new DBConnection(); // 数据库连接方法
@@ -191,6 +193,139 @@ public class News {
 			return sb.toString();
 		} catch (Exception e) {
 			return "No";
+		}
+	}
+
+	/*
+	 * 添加新闻方法
+	 */
+	public String AddNews(String[] s, String s1, String s2) {
+		try {
+			Connection Conn = DBConn.getConn();
+			Statement stmt = Conn.createStatement();
+
+			ResultSet rs = null;
+			String sSql = "select * from News order by NewsID desc"; // 得到当前最末尾数据编号
+			rs = stmt.executeQuery(sSql);
+			int z = 0;
+			int newNum = 0;
+			if (!rs.next()) {
+				newNum = 1;
+			} else {
+				while (z < 1 && !rs.isAfterLast()) {
+					int NewsID = rs.getInt("NewsID");
+					newNum = NewsID + 1;
+					break;
+				}
+			}
+
+			for (int i = 0; i < s.length; i++) {
+				if (i != 1)
+					s[i] = Fun.getStrCN(Fun.CheckReplace(s[i]));
+				else
+					s[i] = Fun.getStrCN(s[i]);
+			}
+
+			SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+			String newsTime = format1.format(new Date());
+
+			StringBuffer sql = new StringBuffer();
+			sql.append("insert into News (NewsID,NewsTitle,NewsContent,NewsTime,AdminName) values (" + " '" + newNum
+					+ "'," + " '" + s[0] + "'," + " '" + s[1] + "'," + " '" + newsTime + "'," + " '" + s1 + "')");
+
+			System.out.println(sql);
+
+			try {
+
+				Conn.setAutoCommit(false);
+				stmt.execute(sql.toString());
+				Conn.commit();
+				Conn.setAutoCommit(true);
+				stmt.close();
+				Conn.close();
+
+				return "Yes";
+			} catch (Exception e) {
+				Conn.rollback();
+				e.printStackTrace();
+				Conn.close();
+				return "添加成功!";
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "添加失败";
+		}
+	}
+
+	/*
+	 * 删除新闻
+	 */
+	public boolean DelNews(String s0, String s1, String s2) {
+
+		try {
+			Connection Conn = DBConn.getConn();
+			Statement stmt = Conn.createStatement();
+			int NewsID = Fun.StrToInt(s0);
+			if (NewsID == 0)
+				return false;
+			else {
+				try {
+					String sql = "delete from News where NewsID=" + NewsID;
+
+					Conn.setAutoCommit(false);
+					stmt.executeUpdate(sql);
+
+					Conn.commit();
+					Conn.setAutoCommit(true);
+
+					stmt.close();
+					Conn.close();
+					return true;
+				} catch (Exception e) {
+					Conn.rollback();
+					// e.printStackTrace();
+					Conn.close();
+					return false;
+				}
+			}
+		} catch (Exception e) {
+			// e.printStackTrace();
+			// System.out.print(e.getMessage());
+
+			return false;
+		}
+
+	}
+
+	/*
+	 * 修改新闻
+	 */
+	public String EditNews(String[] s, String s0, String s1, String s2) {
+		try {
+
+			Connection Conn = DBConn.getConn();
+			Statement stmt = Conn.createStatement();
+
+			for (int i = 0; i < s.length; i++) {
+				s[i] = Fun.getStrCN(Fun.CheckReplace(s[i]));
+			}
+
+			int NewsID = Fun.StrToInt(s0);
+
+			StringBuffer sql = new StringBuffer();
+			sql.append("update News set NewsTitle='" + s[0] + "'" + " ,NewsContent='" + s[1] + "'" + " where NewsID='"
+					+ NewsID + "'");
+
+			stmt.executeUpdate(sql.toString());
+			stmt.close();
+			Conn.close();
+
+			return "Yes";
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.print(e.getMessage());
+			return "编辑错误!";
 		}
 	}
 
